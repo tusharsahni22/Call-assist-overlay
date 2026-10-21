@@ -1,0 +1,29 @@
+{
+  "name": "call-assist-overlay",
+  "version": "1.0.0",
+  "description": "Stealth floating interactive script reader and assistant overlay",
+  "main": "src/main/main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [
+    "electron",
+    "overlay",
+    "teleprompter",
+    "stealth"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "electron": "^32.3.3"
+  },
+  "dependencies": {
+    "electron-localshortcut": "^3.2.1",
+    "openai": "^7.41.0",
+    "uiohook-napi": "^1.5.5",
+    "vosk": "^0.3.39",
+    "whisper-node": "^1.1.1",
+    "ws": "^8.22.0"
+  }
+}

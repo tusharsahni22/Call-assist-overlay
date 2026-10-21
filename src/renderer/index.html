@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call Feedback & Realtime Q&A</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glass-container" id="appContainer">
+    <!-- Stealth Draggable Header -->
+    <header class="window-header">
+      <div class="header-left">
+        <div class="stealth-indicator" title="Hidden from screen sharing & recordings (Zoom, Teams, Meet, OBS)">
+          <span class="pulse-dot"></span>
+          <span class="stealth-label">STEALTH ON</span>
+        </div>
+        <div class="call-badge" id="callStatusBadge">Idle</div>
+      </div>
+      
+      <div class="window-controls no-drag">
+        <button id="btnPin" class="icon-btn active" title="Toggle Always On Top">📌</button>
+        <button id="btnMinimize" class="icon-btn" title="Minimize">─</button>
+        <button id="btnClose" class="icon-btn danger" title="Close">✕</button>
+      </div>
+    </header>
+
+    <!-- Top Action / Master Listening Bar -->
+    <section class="master-bar no-drag">
+      <div class="master-left">
+        <button id="btnToggleListening" class="master-btn primary">
+          <span class="btn-icon">▶</span>
+          <span id="listeningBtnText">Start Listening</span>
+        </button>
+        <button id="btnManualEnd" class="master-btn subtle" style="display: none;" title="Force end call and run feedback now">
+          ⏹ End Call
+        </button>
+      </div>
+
+      <div class="master-right">
+        <!-- VAD Audio Visualizer -->
+        <div class="vad-meter-box" title="Speech detection meter">
+          <div class="vad-meter-bar" id="vadMeter"></div>
+        </div>
+        <!-- Opacity Slider -->
+        <div class="slider-box" title="Overlay Opacity">
+          <span>👁</span>
+          <input type="range" id="opacitySlider" min="25" max="100" value="95">
+        </div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="app-nav no-drag">
+      <button class="nav-btn active" data-tab="realtime">⚡ Realtime Answers</button>
+      <button class="nav-btn" data-tab="feedback">📊 Feedback & Report</button>
+      <button class="nav-btn" data-tab="settings">⚙️ Settings</button>
+    </nav>
+
+    <!-- Content Sections -->
+    <main class="main-body" id="mainBody">
+
+      <!-- TAB 1: REALTIME Q&A & LIVE TRANSCRIPTION -->
+      <section id="tab-realtime" class="tab-pane active">
+        <!-- Context & Mode Selector -->
+        <div class="realtime-header-box no-drag">
+          <div class="mode-select-row">
+            <span class="row-label">Mode:</span>
+            <div class="mode-pills" id="modePills">
+              <button class="mode-pill active" data-mode="interview">Interview</button>
+              <button class="mode-pill" data-mode="coding">Coding</button>
+              <button class="mode-pill" data-mode="meeting">Meeting</button>
+              <button class="mode-pill" data-mode="sales">Sales</button>
+              <button class="mode-pill" data-mode="general">General</button>
+            </div>
+          </div>
+
+          <!-- Manual Ask Box -->
+          <div class="manual-ask-row">
+            <input type="text" id="manualAskInput" placeholder="Ask ⚡: Type question or paste topic..." />
+            <button id="btnManualAsk" class="ask-btn">Ask</button>
+          </div>
+        </div>
+
+        <!-- Realtime Answers Cards Stream -->
+        <div class="answers-stream" id="answersStream">
+          <div class="empty-state" id="emptyAnswersPlaceholder">
+            <span class="icon">💡</span>
+            <p><strong>Realtime Answers Ready</strong></p>
+            <p class="sub">When a question is asked on your call, ChatGPT streams the speakable response right here.</p>
+          </div>
+        </div>
+
+        <!-- Live Rolling Transcript Bar (Collapsible) -->
+        <div class="rolling-transcript-drawer">
+          <div class="drawer-header" id="toggleTranscriptDrawer">
+            <span>Live Transcript (System + Mic)</span>
+            <span class="arrow-icon">▼</span>
+          </div>
+          <div class="drawer-body" id="rollingTranscriptLog">
+            <p class="empty-text">Audio chunks will appear as conversation flows...</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: POST-CALL FEEDBACK REPORT -->
+      <section id="tab-feedback" class="tab-pane">
+        <div class="feedback-card" id="feedbackCard">
+          <div class="feedback-empty" id="feedbackEmpty">
+            <h3>No Call Feedback Yet</h3>
+            <p>Have your conversation! Once silence is detected (or you click End Call), structured feedback scores, strengths, and missed opportunities will render here.</p>
+          </div>
+
+          <div id="feedbackContent" style="display: none;">
+            <div class="feedback-header">
+              <span class="verdict-tag" id="verdictTag">Strong Candidate</span>
+              <span class="call-sentiment" id="sentimentTag">Positive</span>
+            </div>
+
+            <p class="feedback-summary" id="feedbackSummary"></p>
+
+            <!-- Score Grid -->
+            <div class="scores-grid" id="scoresGrid">
+              <div class="score-card">
+                <span class="score-val" id="scoreOverall">0.0</span>
+                <span class="score-lbl">Overall</span>
+              </div>
+              <div class="score-card">
+                <span class="score-val" id="scoreClarity">0.0</span>
+                <span class="score-lbl">Clarity</span>
+              </div>
+              <div class="score-card">
+                <span class="score-val" id="scoreListening">0.0</span>
+                <span class="score-lbl">Listening</span>
+              </div>
+              <div class="score-card">
+                <span class="score-val" id="scoreQuestioning">0.0</span>
+                <span class="score-lbl">Questions</span>
+              </div>
+            </div>
+
+            <!-- Bullet Sections -->
+            <div class="feedback-section">
+              <h4>✨ Key Strengths</h4>
+              <ul id="strengthsList" class="feedback-list"></ul>
+            </div>
+
+            <div class="feedback-section">
+              <h4>🎯 Actionable Improvements</h4>
+              <ul id="improvementsList" class="feedback-list"></ul>
+            </div>
+
+            <div class="feedback-section">
+              <h4>⚡ Missed Opportunities</h4>
+              <ul id="missedList" class="feedback-list"></ul>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 3: SETTINGS & CONTEXT -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="settings-form">
+          <div class="form-group">
+            <label>OpenAI API Key</label>
+            <input type="password" id="inputApiKey" placeholder="sk-proj-..." />
+            <small class="hint">Stored only locally on your PC (userData/settings.json).</small>
+          </div>
+
+          <div class="form-group">
+            <label>Your Background & Resume Context (Crucial for grounded answers)</label>
+            <textarea id="inputUserContext" rows="5" placeholder="Paste your resume summary, project numbers, tech stack, past companies, and JD context. ChatGPT will strictly ground its responses in this."></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group half">
+              <label>Silence timeout for Call End (seconds)</label>
+              <input type="number" id="inputSilenceTimeout" min="3" max="30" value="8" />
+            </div>
+            <div class="form-group half">
+              <label>VAD Volume Threshold</label>
+              <input type="number" id="inputVadThreshold" step="0.005" min="0.005" max="0.1" value="0.02" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>Language</label>
+            <select id="selectLanguage">
+              <option value="en">English</option>
+              <option value="hi">Hindi / Hinglish</option>
+              <option value="auto">Auto Detect</option>
+            </select>
+          </div>
+
+          <button id="btnSaveSettings" class="primary-btn">Save Settings</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Action Bar -->
+    <footer class="window-footer no-drag">
+      <div class="footer-left">
+        <button id="btnClickThrough" class="chip-btn" title="Toggle Click-Through (Hotkeys: Alt+X or Ctrl+Shift+X)">
+          <span class="chip-icon">🖱</span>
+          <span class="chip-text">Click-Through (Alt+X)</span>
+        </button>
+      </div>
+      <div class="footer-right">
+        <span class="shortcut-hint">Ctrl+Shift+L: Toggle Listen</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="audio-engine.js"></script>
+  <script src="realtime-assistant.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
+

@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Call Assist Floating Assistant</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="glass-container" id="appContainer">
+    <!-- Draggable Header -->
+    <header class="window-header">
+      <div class="header-left">
+        <div class="stealth-indicator" title="Hidden from Screen Share (Zoom, Meet, Teams, OBS)">
+          <span class="pulse-dot"></span>
+          <span class="stealth-label">STEALTH ON</span>
+        </div>
+        <div class="teleprompter-status">
+          <span id="speedDisplay" class="badge">1.0x</span>
+        </div>
+      </div>
+      
+      <div class="window-controls no-drag">
+        <button id="btnPin" class="icon-btn active" title="Toggle Always On Top">📌</button>
+        <button id="btnMinimize" class="icon-btn" title="Minimize">─</button>
+        <button id="btnClose" class="icon-btn danger" title="Close">✕</button>
+      </div>
+    </header>
+
+    <!-- Interactive Quick Bar / Control Tools -->
+    <section class="toolbar no-drag">
+      <div class="tool-group">
+        <button id="btnPlayPause" class="action-btn primary" title="Auto Scroll (Space)">
+          <span class="icon">▶</span>
+          <span class="btn-text">Auto-Scroll</span>
+        </button>
+        <button id="btnSlower" class="action-btn small" title="Speed -0.2x">➖</button>
+        <button id="btnFaster" class="action-btn small" title="Speed +0.2x">➕</button>
+        <button id="btnResetScroll" class="action-btn small" title="Reset to Top">⏮</button>
+      </div>
+
+      <div class="tool-group secondary-tools">
+        <div class="slider-control" title="Overlay Opacity">
+          <span class="control-label">👁</span>
+          <input type="range" id="opacitySlider" min="20" max="100" value="95">
+        </div>
+        <div class="slider-control" title="Font Size">
+          <span class="control-label">Aa</span>
+          <input type="range" id="fontSizeSlider" min="13" max="28" value="15">
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Navigation / Script Categorization Tabs -->
+    <nav class="quick-tabs no-drag">
+      <button class="tab-btn active" data-tab="live-transcribe">🎙️ Live Transcribe</button>
+      <button class="tab-btn" data-tab="script">📜 Script Reader</button>
+      <button class="tab-btn" data-tab="cheat-sheet">💡 Cheat Sheet</button>
+      <button class="tab-btn" data-tab="quick-answers">⚡ Quick Responses</button>
+      <button class="tab-btn" data-tab="notes">📝 Live Notes</button>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="content-body" id="scrollContainer">
+
+      <!-- TAB: Live Transcribe & Meeting Listener -->
+      <section id="tab-live-transcribe" class="tab-content active">
+        <!-- Audio Source Bar -->
+        <div class="audio-control-card no-drag">
+          <div class="audio-card-header">
+            <div>
+              <div class="card-tag">Audio Ear & Meeting Listener</div>
+              <h3 class="card-title">Call Live Captions</h3>
+            </div>
+            <button id="btnToggleTranscribe" class="listen-toggle-btn start">
+              <span class="mic-icon">🎙️</span>
+              <span id="transcribeBtnText">Start Listening</span>
+            </button>
+          </div>
+
+          <div class="source-selectors">
+            <label class="source-chip active" id="chipMicSource">
+              <input type="radio" name="audioSourceMode" value="mic" checked hidden>
+              <span>🎤 Microphone</span>
+            </label>
+            <label class="source-chip" id="chipSystemSource" title="Captures other callers speaking in Teams, Zoom, Meet, browser">
+              <input type="radio" name="audioSourceMode" value="system" hidden>
+              <span>🔊 Meeting Audio (Loopback)</span>
+            </label>
+          </div>
+
+          <div class="audio-visualizer-container">
+            <div class="waveform-bars" id="waveform">
+              <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+              <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+              <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+            </div>
+            <span id="audioStatusText" class="audio-status-label">Idle - Click Start Listening</span>
+          </div>
+        </div>
+
+        <!-- Live Streaming Transcript Display -->
+        <div class="live-transcript-feed">
+          <div class="feed-header">
+            <span>Real-time Stream</span>
+            <div class="feed-actions no-drag">
+              <button id="btnClearTranscript" class="mini-tool-btn" title="Clear transcript">🗑 Clear</button>
+              <button id="btnCopyTranscript" class="mini-tool-btn" title="Copy transcript">📋 Copy All</button>
+            </div>
+          </div>
+
+          <div id="transcriptLog" class="transcript-scroll-area">
+            <div class="transcript-placeholder" id="transcriptPlaceholder">
+              <p>Speak into your mic or start your meeting...</p>
+              <p class="sub-hint">Real-time transcripts from you and the other participants will appear here live.</p>
+            </div>
+          </div>
+
+          <!-- Interim active speech bubble -->
+          <div id="interimSpeechBubble" class="interim-bubble" style="display: none;">
+            <span class="speaking-dot"></span>
+            <span id="interimText" class="interim-text">Listening...</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Script Reader -->
+      <section id="tab-script" class="tab-content">
+        <div class="script-card highlight">
+          <div class="card-tag">Opening / Intro</div>
+          <h3 class="card-title">Welcome & Value Proposition</h3>
+          <p class="script-line leading">
+            "Hello <mark>[Prospect Name]</mark>, great speaking with you today! Thanks for setting aside time. The primary objective for our call today is to walk through how we can solve <mark>[Pain Point]</mark> and see if this aligns with your current roadmap."
+          </p>
+        </div>
+
+        <div class="script-card">
+          <div class="card-tag">Discovery Questions</div>
+          <h3 class="card-title">Qualifying & Needs Analysis</h3>
+          <p class="script-line">
+            "Before jumping in, could you share how your team currently manages this workflow, and what has been the biggest bottleneck you've encountered recently?"
+          </p>
+          <ul class="bullet-list">
+            <li>What timeline are you targeting for deployment?</li>
+            <li>Who else from your engineering or leadership team would be involved?</li>
+          </ul>
+        </div>
+
+        <div class="script-card">
+          <div class="card-tag">Handling Objections</div>
+          <h3 class="card-title">Cost / Budget Concerns</h3>
+          <p class="script-line">
+            "I completely understand budget is top of mind. Many of our current clients felt the same initially, until they found our solution recouped costs within 45 days by cutting manual overhead by 40%."
+          </p>
+        </div>
+
+        <div class="script-card">
+          <div class="card-tag">Call To Action</div>
+          <h3 class="card-title">Closing Next Steps</h3>
+          <p class="script-line">
+            "Based on everything we discussed, would it make sense to set up a 20-minute tailored pilot walkthrough with your tech lead this Thursday or Friday?"
+          </p>
+        </div>
+      </section>
+
+      <!-- Tab: Cheat Sheet -->
+      <section id="tab-cheat-sheet" class="tab-content">
+        <div class="grid-cards">
+          <div class="mini-card">
+            <h4>Key Metric 1</h4>
+            <p>99.9% Uptime SLA with 24/7 Enterprise Support.</p>
+          </div>
+          <div class="mini-card">
+            <h4>Key Metric 2</h4>
+            <p>SOC-2 Type II & GDPR compliant end-to-end encryption.</p>
+          </div>
+          <div class="mini-card">
+            <h4>Competitor Diff</h4>
+            <p>Zero-latency sync, native desktop engine, private edge inference.</p>
+          </div>
+          <div class="mini-card">
+            <h4>Pricing Model</h4>
+            <p>Flexible tier: per-seat or usage-based billing with no lock-in.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Tab: Quick Responses -->
+      <section id="tab-quick-answers" class="tab-content">
+        <div class="snippet-item" onclick="copySnippet(this)">
+          <div class="snippet-header">
+            <span>Security Guarantee</span>
+            <span class="copy-badge">Click to Copy</span>
+          </div>
+          <p class="snippet-body">"All data is processed strictly client-side and encrypted with AES-256 in transit and at rest."</p>
+        </div>
+        <div class="snippet-item" onclick="copySnippet(this)">
+          <div class="snippet-header">
+            <span>Implementation Timeline</span>
+            <span class="copy-badge">Click to Copy</span>
+          </div>
+          <p class="snippet-body">"Standard onboarding takes less than 48 hours with full turnkey API setup."</p>
+        </div>
+        <div class="snippet-item" onclick="copySnippet(this)">
+          <div class="snippet-header">
+            <span>Free Trial Policy</span>
+            <span class="copy-badge">Click to Copy</span>
+          </div>
+          <p class="snippet-body">"We provide a 14-day fully featured pilot with no credit card required."</p>
+        </div>
+      </section>
+
+      <!-- Tab: Live Notes -->
+      <section id="tab-notes" class="tab-content">
+        <textarea id="liveNotesArea" class="custom-textarea" placeholder="Type quick notes during your call here... (persists automatically)"></textarea>
+      </section>
+    </main>
+
+    <!-- Bottom Status & Quick Action Bar -->
+    <footer class="app-footer no-drag">
+      <div class="footer-left">
+        <button id="btnClickThrough" class="chip-btn" title="Toggle Click-Through (Hotkeys: Alt+X or Ctrl+Shift+X)">
+          <span class="chip-icon">🖱</span>
+          <span class="chip-text">Click-Through (Alt+X)</span>
+        </button>
+        <button id="btnStealthToggle" class="chip-btn active" title="Exclude from screen captures / shares">
+          <span class="chip-icon">🛡</span>
+          <span class="chip-text">Anti-Share Shield</span>
+        </button>
+      </div>
+      <div class="footer-right">
+        <span id="charCount" class="status-sub">Ready</span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
